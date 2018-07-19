@@ -36,8 +36,10 @@ func TestServerEntryPointWhitelistConfig(t *testing.T) {
 			desc: "whitelist middleware should be added if configured on entrypoint",
 			entrypoint: &configuration.EntryPoint{
 				Address: ":0",
-				WhitelistSourceRange: []string{
-					"127.0.0.1/32",
+				WhiteList: &types.WhiteList{
+					SourceRange: []string{
+						"127.0.0.1/32",
+					},
 				},
 				ForwardedHeaders: &configuration.ForwardedHeaders{Insecure: true},
 			},
@@ -97,23 +99,6 @@ func TestBuildIPWhiteLister(t *testing.T) {
 			errMessage:           "",
 		},
 		{
-			desc: "whitelists configured (deprecated)",
-			whitelistSourceRange: []string{
-				"1.2.3.4/24",
-				"fe80::/16",
-			},
-			middlewareConfigured: true,
-			errMessage:           "",
-		},
-		{
-			desc: "invalid whitelists configured (deprecated)",
-			whitelistSourceRange: []string{
-				"foo",
-			},
-			middlewareConfigured: false,
-			errMessage:           "parsing CIDR whitelist [foo]: parsing CIDR white list <nil>: invalid CIDR address: foo",
-		},
-		{
 			desc: "whitelists configured",
 			whiteList: &types.WhiteList{
 				SourceRange: []string{
@@ -143,7 +128,7 @@ func TestBuildIPWhiteLister(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
 
-			middleware, err := buildIPWhiteLister(test.whiteList, test.whitelistSourceRange)
+			middleware, err := buildIPWhiteLister(test.whiteList)
 
 			if test.errMessage != "" {
 				require.EqualError(t, err, test.errMessage)

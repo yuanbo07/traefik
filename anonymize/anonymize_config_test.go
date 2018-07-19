@@ -83,8 +83,12 @@ func TestDo_globalConfiguration(t *testing.T) {
 					TrustForwardHeader: true,
 				},
 			},
-			WhitelistSourceRange: []string{"foo WhitelistSourceRange 1", "foo WhitelistSourceRange 2", "foo WhitelistSourceRange 3"},
-			Compress:             true,
+			WhiteList: &types.WhiteList{
+				SourceRange: []string{
+					"127.0.0.1/32",
+				},
+			},
+			Compress: true,
 			ProxyProtocol: &configuration.ProxyProtocol{
 				TrustedIPs: []string{"127.0.0.1/32", "192.168.0.1"},
 			},
@@ -128,8 +132,12 @@ func TestDo_globalConfiguration(t *testing.T) {
 					TrustForwardHeader: true,
 				},
 			},
-			WhitelistSourceRange: []string{"fii WhitelistSourceRange 1", "fii WhitelistSourceRange 2", "fii WhitelistSourceRange 3"},
-			Compress:             true,
+			WhiteList: &types.WhiteList{
+				SourceRange: []string{
+					"127.0.0.1/32",
+				},
+			},
+			Compress: true,
 			ProxyProtocol: &configuration.ProxyProtocol{
 				TrustedIPs: []string{"127.0.0.1/32", "192.168.0.1"},
 			},

@@ -50,7 +50,7 @@ func (s *Server) buildMiddlewares(frontendName string, frontend *types.Frontend,
 	}
 
 	// Whitelist
-	ipWhitelistMiddleware, err := buildIPWhiteLister(frontend.WhiteList, frontend.WhitelistSourceRange)
+	ipWhitelistMiddleware, err := buildIPWhiteLister(frontend.WhiteList)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error creating IP Whitelister: %s", err)
 	}
@@ -162,9 +162,7 @@ func (s *Server) buildServerEntryPointMiddlewares(serverEntryPointName string, s
 		serverMiddlewares = append(serverMiddlewares, &middlewares.Compress{})
 	}
 
-	ipWhitelistMiddleware, err := buildIPWhiteLister(
-		s.entryPoints[serverEntryPointName].Configuration.WhiteList,
-		s.entryPoints[serverEntryPointName].Configuration.WhitelistSourceRange)
+	ipWhitelistMiddleware, err := buildIPWhiteLister(s.entryPoints[serverEntryPointName].Configuration.WhiteList)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ip whitelist middleware: %v", err)
 	}
@@ -284,12 +282,9 @@ func (s *Server) buildRedirectHandler(srcEntryPointName string, opt *types.Redir
 	return redirection, nil
 }
 
-func buildIPWhiteLister(whiteList *types.WhiteList, wlRange []string) (*middlewares.IPWhiteLister, error) {
-	if whiteList != nil &&
-		len(whiteList.SourceRange) > 0 {
+func buildIPWhiteLister(whiteList *types.WhiteList) (*middlewares.IPWhiteLister, error) {
+	if whiteList != nil && len(whiteList.SourceRange) > 0 {
 		return middlewares.NewIPWhiteLister(whiteList.SourceRange, whiteList.UseXForwardedFor)
-	} else if len(wlRange) > 0 {
-		return middlewares.NewIPWhiteLister(wlRange, false)
 	}
 	return nil, nil
 }

@@ -11,15 +11,14 @@ import (
 
 // EntryPoint holds an entry point configuration of the reverse proxy (ip, port, TLS...)
 type EntryPoint struct {
-	Address              string
-	TLS                  *tls.TLS          `export:"true"`
-	Redirect             *types.Redirect   `export:"true"`
-	Auth                 *types.Auth       `export:"true"`
-	WhitelistSourceRange []string          // Deprecated
-	WhiteList            *types.WhiteList  `export:"true"`
-	Compress             bool              `export:"true"`
-	ProxyProtocol        *ProxyProtocol    `export:"true"`
-	ForwardedHeaders     *ForwardedHeaders `export:"true"`
+	Address          string
+	TLS              *tls.TLS          `export:"true"`
+	Redirect         *types.Redirect   `export:"true"`
+	Auth             *types.Auth       `export:"true"`
+	WhiteList        *types.WhiteList  `export:"true"`
+	Compress         bool              `export:"true"`
+	ProxyProtocol    *ProxyProtocol    `export:"true"`
+	ForwardedHeaders *ForwardedHeaders `export:"true"`
 }
 
 // ProxyProtocol contains Proxy-Protocol configuration
@@ -63,12 +62,6 @@ func (ep *EntryPoints) Type() string {
 // It's a comma-separated list, so we split it.
 func (ep *EntryPoints) Set(value string) error {
 	result := parseEntryPointsConfiguration(value)
-
-	var whiteListSourceRange []string
-	if len(result["whitelistsourcerange"]) > 0 {
-		whiteListSourceRange = strings.Split(result["whitelistsourcerange"], ",")
-	}
-
 	compress := toBool(result, "compress")
 
 	configTLS, err := makeEntryPointTLS(result)
@@ -77,15 +70,14 @@ func (ep *EntryPoints) Set(value string) error {
 	}
 
 	(*ep)[result["name"]] = &EntryPoint{
-		Address:              result["address"],
-		TLS:                  configTLS,
-		Auth:                 makeEntryPointAuth(result),
-		Redirect:             makeEntryPointRedirect(result),
-		Compress:             compress,
-		WhitelistSourceRange: whiteListSourceRange,
-		WhiteList:            makeWhiteList(result),
-		ProxyProtocol:        makeEntryPointProxyProtocol(result),
-		ForwardedHeaders:     makeEntryPointForwardedHeaders(result),
+		Address:          result["address"],
+		TLS:              configTLS,
+		Auth:             makeEntryPointAuth(result),
+		Redirect:         makeEntryPointRedirect(result),
+		Compress:         compress,
+		WhiteList:        makeWhiteList(result),
+		ProxyProtocol:    makeEntryPointProxyProtocol(result),
+		ForwardedHeaders: makeEntryPointForwardedHeaders(result),
 	}
 
 	return nil
@@ -184,8 +176,7 @@ func makeEntryPointProxyProtocol(result map[string]string) *ProxyProtocol {
 }
 
 func makeEntryPointForwardedHeaders(result map[string]string) *ForwardedHeaders {
-	// TODO must be changed to false by default in the next breaking version.
-	forwardedHeaders := &ForwardedHeaders{Insecure: true}
+	forwardedHeaders := &ForwardedHeaders{}
 	if _, ok := result["forwardedheaders_insecure"]; ok {
 		forwardedHeaders.Insecure = toBool(result, "forwardedheaders_insecure")
 	}
