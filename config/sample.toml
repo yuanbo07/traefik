@@ -1,0 +1,103 @@
+[global]
+   logLevel = "DEBUG"
+   defaultEntryPoints = ["http","https"]
+
+[api]
+  [api.statistics]
+    recentErrors = 100
+
+[docker]
+   endpoint = "unix:///var/run/docker.sock"
+   domain = "docker.local"
+   watch = true
+   exposedbydefault = false
+
+[acme]
+   email = "traefik@containo.us"
+   storageFile = "/acme/acme.json"
+   entryPoint = "https"
+   onDemand = true
+   onHostRule = true
+   caServer = "https://acme/"
+   [[acme.domains]]
+      main = "traefik-is-a-blast"
+
+[file]
+   watch = true
+   filename = "/etc/traefik/rules.toml"
+
+[entryPoints]
+   [entryPoints.http]
+      address = ":80"
+      [entryPoint.http.http]
+         middlewares = ["production-redirect", "basic-auth"]
+
+   [entryPoints.https]
+      address = ":443"
+      [entryPoint.https.http]
+        middlewares = ["customers-white-list", "basic-auth"]
+        [entryPoints.https.tls]
+
+   [entryPoints.http-test]
+      address = ":8081"
+      [entryPoints.http-test.http]
+
+[routers]
+   [routers.v1-request]
+      entryPoints = ["https"]
+      middlewares = ["cannonical-redirect"]
+      service = "application-v1"
+      rule = "Host:traefik-is-a-blast;PathPrefixStrip:/traefik"
+
+   [routers.v2-request]
+      entryPoints = ["http-test"]
+      middlewares = ["early-access-customers-white-list", "basic-auth"]
+      service = "application-v2"
+
+[middlewares]
+   # Redirects
+   [middlewares.ssl-redirect.redirect]
+      entryPoint = "https"
+      permanent = true
+   [middlewares.canonical-redirect.redirect]
+      regex = "^http://traefik-is-a-blast/(.*)"
+      replacement = "https://www.traefik-is-a-blast/$1"
+      permanent = true
+   [middlewares.production-redirect.chain]
+      middlewares = ["ssl-redirect", "canonical-redirect"]
+
+   # WhiteLists
+   [middlewares.early-access-customers-white-list.whitelist]
+      sourceRange = ["xx.xx.xx.xx/yy"]
+      useXForwardedFor = true
+   [middlewares.all-customers-white-list.whitelist]
+      sourceRange = ["xx.xx.xx.xx/yy", "xx.xx.xx.xx/xx"]
+      useXForwardedFor = true
+
+   # Authentication
+   [middlewares.basic-auth.basic-auth] # instead of the current "auth.basic" ?
+   users = ["login:passwd"]
+
+[services]
+   [services.application-v1.loadbalancer]
+      stickiness = true
+      cookieName = "LB_TRAEFIK"
+      circuitBreaker = "Expression"
+      [[services.application-v1.loadbalancer.servers]]
+        url = "http://xx.xx.xx.xx:xx"
+        frequency = 50
+      [[services.application-v1.loadbalancer.servers]]
+        url = "http://xx.xx.xx.xx:xx"
+        frequency = 50
+
+   [services.application-v2.loadbalancer]
+      [[services.application-v2.loadbalancer.servers]]
+        url = "http://xx.xx.xx.xx:xx"
+
+   [services.app.canary] # We declare a service "app" of type canary
+      [[services.app.canary.services]]
+        name="application-v1"
+        frequency=70
+      [[services.app.canary.services]]
+        name="application-v2"
+        frequency=30
