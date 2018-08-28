@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/containous/flaeg/parse"
+	"github.com/containous/traefik/ip"
 )
 
 type Router struct {
@@ -54,8 +55,8 @@ type Chain struct {
 
 // WhiteList contains white list configuration.
 type WhiteList struct {
-	SourceRange      []string `json:"sourceRange,omitempty"`
-	UseXForwardedFor bool     `json:"useXForwardedFor,omitempty" export:"true"`
+	SourceRange []string    `json:"sourceRange,omitempty"`
+	IPStrategy  *IPStrategy `json:"ipStrategy,omitempty"`
 }
 
 // Headers holds the custom header configuration
@@ -83,6 +84,35 @@ type Headers struct {
 	PublicKey               string            `json:"publicKey,omitempty"`
 	ReferrerPolicy          string            `json:"referrerPolicy,omitempty"`
 	IsDevelopment           bool              `json:"isDevelopment,omitempty"`
+}
+
+func (h *Headers) HasCustomHeadersDefined() bool {
+	return h != nil && (len(h.CustomResponseHeaders) != 0 ||
+		len(h.CustomRequestHeaders) != 0)
+}
+
+// HasSecureHeadersDefined checks to see if any of the secure header elements have been set
+func (h *Headers) HasSecureHeadersDefined() bool {
+	return h != nil && (len(h.AllowedHosts) != 0 ||
+		len(h.HostsProxyHeaders) != 0 ||
+		h.SSLRedirect ||
+		h.SSLTemporaryRedirect ||
+		h.SSLForceHost ||
+		h.SSLHost != "" ||
+		len(h.SSLProxyHeaders) != 0 ||
+		h.STSSeconds != 0 ||
+		h.STSIncludeSubdomains ||
+		h.STSPreload ||
+		h.ForceSTSHeader ||
+		h.FrameDeny ||
+		h.CustomFrameOptionsValue != "" ||
+		h.ContentTypeNosniff ||
+		h.BrowserXSSFilter ||
+		h.CustomBrowserXSSValue != "" ||
+		h.ContentSecurityPolicy != "" ||
+		h.PublicKey != "" ||
+		h.ReferrerPolicy != "" ||
+		h.IsDevelopment)
 }
 
 // ErrorPage holds custom error page configuration
@@ -154,4 +184,38 @@ type ClientTLS struct {
 	Cert               string `description:"TLS cert" json:"cert,omitempty"`
 	Key                string `description:"TLS key" json:"key,omitempty"`
 	InsecureSkipVerify bool   `description:"TLS insecure skip verify" json:"insecureSkipVerify,omitempty"`
+}
+
+// IPStrategy Configuration to choose the IP selection strategy.
+type IPStrategy struct {
+	Depth       int      `json:"depth,omitempty" export:"true"`
+	ExcludedIPs []string `json:"excludedIPs,omitempty"`
+}
+
+// Get an IP selection strategy
+// if nil return the RemoteAddr strategy
+// else return a strategy base on the configuration using the X-Forwarded-For Header.
+// Depth override the ExcludedIPs
+func (s *IPStrategy) Get() (ip.Strategy, error) {
+	if s == nil {
+		return &ip.RemoteAddrStrategy{}, nil
+	}
+
+	if s.Depth > 0 {
+		return &ip.DepthStrategy{
+			Depth: s.Depth,
+		}, nil
+	}
+
+	if len(s.ExcludedIPs) > 0 {
+		checker, err := ip.NewChecker(s.ExcludedIPs)
+		if err != nil {
+			return nil, err
+		}
+		return &ip.CheckerStrategy{
+			Checker: checker,
+		}, nil
+	}
+
+	return &ip.RemoteAddrStrategy{}, nil
 }
