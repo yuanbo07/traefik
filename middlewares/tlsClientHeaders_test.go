@@ -352,8 +352,8 @@ func TestGetSans(t *testing.T) {
 }
 
 func TestTlsClientheadersWithCertInfos(t *testing.T) {
-	minimalCertAllInfos := `Subject="C=FR,ST=Some-State,O=Internet Widgits Pty Ltd",NB=1531902496,NA=1534494496,SAN=`
-	completeCertAllInfos := `Subject="C=FR,ST=SomeState,L=Toulouse,O=Cheese,CN=*.cheese.org",NB=1531900816,NA=1563436816,SAN=*.cheese.org,*.cheese.net,cheese.in,test@cheese.org,test@cheese.net,10.0.1.0,10.0.1.2`
+	minimalCertAllInfos := `Subject="C=FR,ST=Some-State,O=Internet Widgits Pty Ltd",Issuer="C=FR,ST=Some-State,L=Toulouse,O=Internet Widgits Pty Ltd",NB=1531902496,NA=1534494496,SAN=`
+	completeCertAllInfos := `Subject="C=FR,ST=SomeState,L=Toulouse,O=Cheese,CN=*.cheese.org",Issuer="C=FR,ST=Some-State,L=Toulouse,O=Internet Widgits Pty Ltd",NB=1531900816,NA=1563436816,SAN=*.cheese.org,*.cheese.net,cheese.in,test@cheese.org,test@cheese.net,10.0.1.0,10.0.1.2`
 
 	testCases := []struct {
 		desc                 string
@@ -407,6 +407,14 @@ func TestTlsClientheadersWithCertInfos(t *testing.T) {
 						Country:      true,
 						SerialNumber: true,
 					},
+					Issuer: &types.TLSClientCertificateIssuerInfos{
+						CountryName:         true,
+						DomainComponent:     true,
+						LocalityName:        true,
+						OrganizationName:    true,
+						SerialNumber:        true,
+						StateOrProvinceName: true,
+					},
 					Sans: true,
 				},
 			},
@@ -421,10 +429,13 @@ func TestTlsClientheadersWithCertInfos(t *testing.T) {
 					Subject: &types.TLSCLientCertificateSubjectInfos{
 						Organization: true,
 					},
+					Issuer: &types.TLSClientCertificateIssuerInfos{
+						CountryName: true,
+					},
 					Sans: true,
 				},
 			},
-			expectedHeader: url.QueryEscape(`Subject="O=Internet Widgits Pty Ltd",NA=1534494496,SAN=`),
+			expectedHeader: url.QueryEscape(`Subject="O=Internet Widgits Pty Ltd",Issuer="C=FR",NA=1534494496,SAN=`),
 		},
 		{
 			desc:         "TLS with complete certificate, with all infos",
@@ -440,6 +451,14 @@ func TestTlsClientheadersWithCertInfos(t *testing.T) {
 						Province:     true,
 						Country:      true,
 						SerialNumber: true,
+					},
+					Issuer: &types.TLSClientCertificateIssuerInfos{
+						CountryName:         true,
+						DomainComponent:     true,
+						LocalityName:        true,
+						OrganizationName:    true,
+						StateOrProvinceName: true,
+						SerialNumber:        true,
 					},
 					Sans: true,
 				},
@@ -461,6 +480,14 @@ func TestTlsClientheadersWithCertInfos(t *testing.T) {
 						Country:      true,
 						SerialNumber: true,
 					},
+					Issuer: &types.TLSClientCertificateIssuerInfos{
+						CountryName:         true,
+						DomainComponent:     true,
+						LocalityName:        true,
+						OrganizationName:    true,
+						StateOrProvinceName: true,
+						SerialNumber:        true,
+					},
 					Sans: true,
 				},
 			},
@@ -469,6 +496,7 @@ func TestTlsClientheadersWithCertInfos(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+
 		tlsClientHeaders := NewTLSClientHeaders(&types.Frontend{PassTLSClientCert: test.tlsClientCertHeaders})
 
 		res := httptest.NewRecorder()
@@ -735,7 +763,37 @@ func TestNewTLSClientHeadersFromStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "frontend with the Infos NotBefore",
+			desc: "frontend with the Infos Issuer",
+			frontend: &types.Frontend{
+				PassTLSClientCert: &types.TLSClientHeaders{
+					Infos: &types.TLSClientCertificateInfos{
+						Issuer: &types.TLSClientCertificateIssuerInfos{
+							CountryName:         true,
+							DomainComponent:     true,
+							LocalityName:        true,
+							OrganizationName:    true,
+							SerialNumber:        true,
+							StateOrProvinceName: true,
+						},
+					},
+				},
+			},
+			expected: &TLSClientHeaders{
+				PEM: false,
+				Infos: &TLSClientCertificateInfos{
+					Issuer: &TLSCLientCertificateIssuerInfos{
+						CountryName:         true,
+						CommonName:          true,
+						LocalityName:        true,
+						OrganizationName:    true,
+						SerialNumber:        true,
+						StateOrProvinceName: true,
+					},
+				},
+			},
+		},
+		{
+			desc: "frontend with the Sans Infos",
 			frontend: &types.Frontend{
 				PassTLSClientCert: &types.TLSClientHeaders{
 					Infos: &types.TLSClientCertificateInfos{
@@ -765,6 +823,14 @@ func TestNewTLSClientHeadersFromStruct(t *testing.T) {
 							Province:     true,
 							SerialNumber: true,
 						},
+						Issuer: &types.TLSClientCertificateIssuerInfos{
+							CountryName:         true,
+							DomainComponent:     true,
+							LocalityName:        true,
+							OrganizationName:    true,
+							SerialNumber:        true,
+							StateOrProvinceName: true,
+						},
 						Sans: true,
 					},
 				},
@@ -776,12 +842,20 @@ func TestNewTLSClientHeadersFromStruct(t *testing.T) {
 					NotAfter:  true,
 					Sans:      true,
 					Subject: &TLSCLientCertificateSubjectInfos{
-						Province:     true,
-						Organization: true,
-						Locality:     true,
 						Country:      true,
+						Province:     true,
+						Locality:     true,
+						Organization: true,
 						CommonName:   true,
 						SerialNumber: true,
+					},
+					Issuer: &TLSCLientCertificateIssuerInfos{
+						CountryName:         true,
+						CommonName:          true,
+						LocalityName:        true,
+						OrganizationName:    true,
+						SerialNumber:        true,
+						StateOrProvinceName: true,
 					},
 				}},
 		},

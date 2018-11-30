@@ -637,6 +637,7 @@ type TLSClientCertificateInfos struct {
 }
 
 // TLSCLientCertificateSubjectInfos holds the client TLS certificate subject infos configuration
+// TODO refactor cf https://tools.ietf.org/html/rfc3739#section-3.1.2
 type TLSCLientCertificateSubjectInfos struct {
 	Country      bool `description:"Add Country info in header" json:"country"`
 	Province     bool `description:"Add Province info in header" json:"province"`
@@ -654,5 +655,5 @@ type TLSClientCertificateIssuerInfos struct {
 	LocalityName        bool `description:"Add Locality info in header" json:"locality"`
 	OrganizationName    bool `description:"Add Organization info in header" json:"organization"`
 	SerialNumber        bool `description:"Add SerialNumber info in header" json:"serialNumber"`
-	stateOrProvinceName bool `description:"Add StateOrProvince info in header" json:"stateOrProvince"`
+	StateOrProvinceName bool `description:"Add StateOrProvince info in header" json:"stateOrProvince"`
 }

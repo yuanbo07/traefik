@@ -21,6 +21,7 @@ type TLSClientCertificateInfos struct {
 	NotAfter  bool
 	NotBefore bool
 	Subject   *TLSCLientCertificateSubjectInfos
+	Issuer    *TLSCLientCertificateIssuerInfos
 	Sans      bool
 }
 
@@ -34,10 +35,35 @@ type TLSCLientCertificateSubjectInfos struct {
 	SerialNumber bool
 }
 
+// TLSCLientCertificateIssuerInfos contains the configuration for the certificate issuer infos.
+type TLSCLientCertificateIssuerInfos struct {
+	CountryName         bool
+	CommonName          bool
+	LocalityName        bool
+	OrganizationName    bool
+	SerialNumber        bool
+	StateOrProvinceName bool
+}
+
 // TLSClientHeaders is a middleware that helps setup a few tls infos features.
 type TLSClientHeaders struct {
 	PEM   bool                       // pass the sanitized pem to the backend in a specific header
 	Infos *TLSClientCertificateInfos // pass selected informations from the client certificate
+}
+
+func newTLSCLientCertificateIssuerInfos(infos *types.TLSClientCertificateIssuerInfos) *TLSCLientCertificateIssuerInfos {
+	if infos == nil {
+		return nil
+	}
+
+	return &TLSCLientCertificateIssuerInfos{
+		CountryName:         infos.CountryName,
+		CommonName:          infos.DomainComponent,
+		LocalityName:        infos.LocalityName,
+		OrganizationName:    infos.OrganizationName,
+		SerialNumber:        infos.SerialNumber,
+		StateOrProvinceName: infos.StateOrProvinceName,
+	}
 }
 
 func newTLSCLientCertificateSubjectInfos(infos *types.TLSCLientCertificateSubjectInfos) *TLSCLientCertificateSubjectInfos {
@@ -65,6 +91,7 @@ func newTLSClientInfos(infos *types.TLSClientCertificateInfos) *TLSClientCertifi
 		NotAfter:  infos.NotAfter,
 		Sans:      infos.Sans,
 		Subject:   newTLSCLientCertificateSubjectInfos(infos.Subject),
+		Issuer:    newTLSCLientCertificateIssuerInfos(infos.Issuer),
 	}
 }
 
@@ -154,6 +181,46 @@ func getSANs(cert *x509.Certificate) []string {
 }
 
 // getSubjectInfos extract the requested informations from the certificate subject
+// https://tools.ietf.org/html/rfc3739#section-3.1.1
+func (s *TLSClientHeaders) getIssuerInfos(cs *pkix.Name) string {
+	var issuer string
+
+	if s.Infos != nil && s.Infos.Issuer != nil {
+		options := s.Infos.Issuer
+
+		var content []string
+
+		// TODO domainComponent
+
+		if options.CountryName && len(cs.Country) > 0 {
+			content = append(content, fmt.Sprintf("C=%s", cs.Country[0]))
+		}
+
+		if options.StateOrProvinceName && len(cs.Province) > 0 {
+			content = append(content, fmt.Sprintf("ST=%s", cs.Province[0]))
+		}
+
+		if options.LocalityName && len(cs.Locality) > 0 {
+			content = append(content, fmt.Sprintf("L=%s", cs.Locality[0]))
+		}
+
+		if options.OrganizationName && len(cs.Organization) > 0 {
+			content = append(content, fmt.Sprintf("O=%s", cs.Organization[0]))
+		}
+
+		if options.SerialNumber && len(cs.SerialNumber) > 0 {
+			content = append(content, fmt.Sprintf("SN=%s", cs.SerialNumber))
+		}
+
+		if len(content) > 0 {
+			issuer = `Issuer="` + strings.Join(content, ",") + `"`
+		}
+	}
+
+	return issuer
+}
+
+// getSubjectInfos extract the requested informations from the certificate subject
 func (s *TLSClientHeaders) getSubjectInfos(cs *pkix.Name) string {
 	var subject string
 
@@ -204,6 +271,11 @@ func (s *TLSClientHeaders) getXForwardedTLSClientCertInfos(certs []*x509.Certifi
 		subject := s.getSubjectInfos(&peerCert.Subject)
 		if len(subject) > 0 {
 			values = append(values, subject)
+		}
+
+		issuer := s.getIssuerInfos(&peerCert.Issuer)
+		if len(issuer) > 0 {
+			values = append(values, issuer)
 		}
 
 		ci := s.Infos
