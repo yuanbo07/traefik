@@ -13,32 +13,28 @@ import (
 	"github.com/containous/traefik/types"
 )
 
-const xForwardedTLSClientCert = "X-Forwarded-Tls-Client-Cert"
-const xForwardedTLSClientCertInfos = "X-Forwarded-Tls-Client-Cert-Infos"
+const (
+	xForwardedTLSClientCert      = "X-Forwarded-Tls-Client-Cert"
+	xForwardedTLSClientCertInfos = "X-Forwarded-Tls-Client-Cert-Infos"
+)
 
-// TLSClientCertificateInfos is a struct for specifying the configuration for the tlsClientHeaders middleware.
-type TLSClientCertificateInfos struct {
+var attributeTypeNames = map[string]string{
+	"0.9.2342.19200300.100.1.25": "DC", // Domain component OID - RFC 2247
+}
+
+// tlsClientCertificateInfos is a struct for specifying the configuration for the tlsClientHeaders middleware.
+type tlsClientCertificateInfos struct {
 	NotAfter  bool
 	NotBefore bool
-	Subject   *TLSCLientCertificateSubjectInfos
-	Issuer    *TLSCLientCertificateIssuerInfos
+	Subject   *domainNameOptions
+	Issuer    *domainNameOptions
 	Sans      bool
 }
 
-// TLSCLientCertificateSubjectInfos contains the configuration for the certificate subject infos.
-type TLSCLientCertificateSubjectInfos struct {
-	Country      bool
-	Province     bool
-	Locality     bool
-	Organization bool
-	CommonName   bool
-	SerialNumber bool
-}
-
-// TLSCLientCertificateIssuerInfos contains the configuration for the certificate issuer infos.
-type TLSCLientCertificateIssuerInfos struct {
-	CountryName         bool
+type domainNameOptions struct {
 	CommonName          bool
+	CountryName         bool
+	DomainComponent     bool
 	LocalityName        bool
 	OrganizationName    bool
 	SerialNumber        bool
@@ -48,45 +44,47 @@ type TLSCLientCertificateIssuerInfos struct {
 // TLSClientHeaders is a middleware that helps setup a few tls infos features.
 type TLSClientHeaders struct {
 	PEM   bool                       // pass the sanitized pem to the backend in a specific header
-	Infos *TLSClientCertificateInfos // pass selected informations from the client certificate
+	Infos *tlsClientCertificateInfos // pass selected informations from the client certificate
 }
 
-func newTLSCLientCertificateIssuerInfos(infos *types.TLSClientCertificateIssuerInfos) *TLSCLientCertificateIssuerInfos {
+func newTLSCLientCertificateIssuerInfos(infos *types.TLSClientCertificateIssuerInfos) *domainNameOptions {
 	if infos == nil {
 		return nil
 	}
 
-	return &TLSCLientCertificateIssuerInfos{
-		CountryName:         infos.CountryName,
-		CommonName:          infos.DomainComponent,
-		LocalityName:        infos.LocalityName,
-		OrganizationName:    infos.OrganizationName,
+	return &domainNameOptions{
+		CommonName:          infos.CommonName,
+		CountryName:         infos.Country,
+		DomainComponent:     infos.DomainComponent,
+		LocalityName:        infos.Locality,
+		OrganizationName:    infos.Organization,
 		SerialNumber:        infos.SerialNumber,
-		StateOrProvinceName: infos.StateOrProvinceName,
+		StateOrProvinceName: infos.Province,
 	}
 }
 
-func newTLSCLientCertificateSubjectInfos(infos *types.TLSCLientCertificateSubjectInfos) *TLSCLientCertificateSubjectInfos {
+func newTLSCLientCertificateSubjectInfos(infos *types.TLSCLientCertificateSubjectInfos) *domainNameOptions {
 	if infos == nil {
 		return nil
 	}
 
-	return &TLSCLientCertificateSubjectInfos{
-		SerialNumber: infos.SerialNumber,
-		CommonName:   infos.CommonName,
-		Country:      infos.Country,
-		Locality:     infos.Locality,
-		Organization: infos.Organization,
-		Province:     infos.Province,
+	return &domainNameOptions{
+		CommonName:          infos.CommonName,
+		CountryName:         infos.Country,
+		DomainComponent:     infos.DomainComponent,
+		LocalityName:        infos.Locality,
+		OrganizationName:    infos.Organization,
+		SerialNumber:        infos.SerialNumber,
+		StateOrProvinceName: infos.Province,
 	}
 }
 
-func newTLSClientInfos(infos *types.TLSClientCertificateInfos) *TLSClientCertificateInfos {
+func newTLSClientInfos(infos *types.TLSClientCertificateInfos) *tlsClientCertificateInfos {
 	if infos == nil {
 		return nil
 	}
 
-	return &TLSClientCertificateInfos{
+	return &tlsClientCertificateInfos{
 		NotBefore: infos.NotBefore,
 		NotAfter:  infos.NotAfter,
 		Sans:      infos.Sans,
@@ -101,17 +99,17 @@ func NewTLSClientHeaders(frontend *types.Frontend) *TLSClientHeaders {
 		return nil
 	}
 
-	var pem bool
-	var infos *TLSClientCertificateInfos
+	var addPEM bool
+	var infos *tlsClientCertificateInfos
 
 	if frontend.PassTLSClientCert != nil {
 		conf := frontend.PassTLSClientCert
-		pem = conf.PEM
+		addPEM = conf.PEM
 		infos = newTLSClientInfos(conf.Infos)
 	}
 
 	return &TLSClientHeaders{
-		PEM:   pem,
+		PEM:   addPEM,
 		Infos: infos,
 	}
 }
@@ -180,81 +178,61 @@ func getSANs(cert *x509.Certificate) []string {
 	return append(sans, uris...)
 }
 
-// getSubjectInfos extract the requested informations from the certificate subject
-// https://tools.ietf.org/html/rfc3739#section-3.1.1
-func (s *TLSClientHeaders) getIssuerInfos(cs *pkix.Name) string {
-	var issuer string
+func (s *TLSClientHeaders) getDomainNameInfos(prefix string, options *domainNameOptions, cs *pkix.Name) string {
+	var dn string
 
-	if s.Infos != nil && s.Infos.Issuer != nil {
-		options := s.Infos.Issuer
+	if options == nil {
+		return dn
+	}
 
-		var content []string
+	var content []string
 
-		// TODO domainComponent
-
-		if options.CountryName && len(cs.Country) > 0 {
-			content = append(content, fmt.Sprintf("C=%s", cs.Country[0]))
-		}
-
-		if options.StateOrProvinceName && len(cs.Province) > 0 {
-			content = append(content, fmt.Sprintf("ST=%s", cs.Province[0]))
-		}
-
-		if options.LocalityName && len(cs.Locality) > 0 {
-			content = append(content, fmt.Sprintf("L=%s", cs.Locality[0]))
-		}
-
-		if options.OrganizationName && len(cs.Organization) > 0 {
-			content = append(content, fmt.Sprintf("O=%s", cs.Organization[0]))
-		}
-
-		if options.SerialNumber && len(cs.SerialNumber) > 0 {
-			content = append(content, fmt.Sprintf("SN=%s", cs.SerialNumber))
-		}
-
-		if len(content) > 0 {
-			issuer = `Issuer="` + strings.Join(content, ",") + `"`
+	// Manage non standard attributes
+	for _, name := range cs.Names {
+		// Domain Component - RFC 2247
+		log.Printf("name: %#s", name)
+		if options.DomainComponent && attributeTypeNames[name.Type.String()] == "DC" {
+			content = append(content, fmt.Sprintf("DC=%s", name.Value))
 		}
 	}
 
-	return issuer
-}
-
-// getSubjectInfos extract the requested informations from the certificate subject
-func (s *TLSClientHeaders) getSubjectInfos(cs *pkix.Name) string {
-	var subject string
-
-	if s.Infos != nil && s.Infos.Subject != nil {
-		options := s.Infos.Subject
-
-		var content []string
-
-		if options.Country && len(cs.Country) > 0 {
-			content = append(content, fmt.Sprintf("C=%s", cs.Country[0]))
-		}
-
-		if options.Province && len(cs.Province) > 0 {
-			content = append(content, fmt.Sprintf("ST=%s", cs.Province[0]))
-		}
-
-		if options.Locality && len(cs.Locality) > 0 {
-			content = append(content, fmt.Sprintf("L=%s", cs.Locality[0]))
-		}
-
-		if options.Organization && len(cs.Organization) > 0 {
-			content = append(content, fmt.Sprintf("O=%s", cs.Organization[0]))
-		}
-
-		if options.CommonName && len(cs.CommonName) > 0 {
-			content = append(content, fmt.Sprintf("CN=%s", cs.CommonName))
-		}
-
-		if len(content) > 0 {
-			subject = `Subject="` + strings.Join(content, ",") + `"`
+	if options.CountryName && len(cs.Country) > 0 {
+		for _, country := range cs.Country {
+			content = append(content, fmt.Sprintf("C=%s", country))
 		}
 	}
 
-	return subject
+	if options.StateOrProvinceName && len(cs.Province) > 0 {
+		for _, province := range cs.Province {
+			content = append(content, fmt.Sprintf("ST=%s", province))
+		}
+	}
+
+	if options.LocalityName && len(cs.Locality) > 0 {
+		for _, locality := range cs.Locality {
+			content = append(content, fmt.Sprintf("L=%s", locality))
+		}
+	}
+
+	if options.OrganizationName && len(cs.Organization) > 0 {
+		for _, organization := range cs.Organization {
+			content = append(content, fmt.Sprintf("O=%s", organization))
+		}
+	}
+
+	if options.SerialNumber && len(cs.SerialNumber) > 0 {
+		content = append(content, fmt.Sprintf("SN=%s", cs.SerialNumber))
+	}
+
+	if options.CommonName && len(cs.CommonName) > 0 {
+		content = append(content, fmt.Sprintf("CN=%s", cs.CommonName))
+	}
+
+	if len(content) > 0 {
+		dn = prefix + `="` + strings.Join(content, ",") + `"`
+	}
+
+	return dn
 }
 
 // getXForwardedTLSClientCertInfos Build a string with the wanted client certificates informations
@@ -268,16 +246,19 @@ func (s *TLSClientHeaders) getXForwardedTLSClientCertInfos(certs []*x509.Certifi
 		var nb string
 		var na string
 
-		subject := s.getSubjectInfos(&peerCert.Subject)
-		if len(subject) > 0 {
-			values = append(values, subject)
-		}
+		if s.Infos != nil {
+			subject := s.getDomainNameInfos("Subject", s.Infos.Subject, &peerCert.Subject)
+			if len(subject) > 0 {
+				values = append(values, subject)
+			}
 
-		issuer := s.getIssuerInfos(&peerCert.Issuer)
-		if len(issuer) > 0 {
-			values = append(values, issuer)
+			issuer := s.getDomainNameInfos("Issuer", s.Infos.Issuer, &peerCert.Issuer)
+			if len(issuer) > 0 {
+				values = append(values, issuer)
+			}
 		}
-
+		log.Printf("TEST JB - subject: %s", peerCert.Subject.String())
+		log.Printf("TEST JB - issuer: %s", peerCert.Issuer.String())
 		ci := s.Infos
 		if ci != nil {
 			if ci.NotBefore {
