@@ -1990,6 +1990,7 @@ var _templatesMarathonTmpl = []byte(`{{ $apps := .Applications }}
           organization = {{ $subject.Organization }}
           commonName = {{ $subject.CommonName }}
           serialNumber = {{ $subject.SerialNumber }}
+          domainComponent = {{ $subject.DomainComponent }}
         {{end}}
       {{end}}
     {{end}}
