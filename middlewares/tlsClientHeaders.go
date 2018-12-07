@@ -22,16 +22,16 @@ var attributeTypeNames = map[string]string{
 	"0.9.2342.19200300.100.1.25": "DC", // Domain component OID - RFC 2247
 }
 
-// tlsClientCertificateInfos is a struct for specifying the configuration for the tlsClientHeaders middleware.
-type tlsClientCertificateInfos struct {
+// TLSClientCertificateInfos is a struct for specifying the configuration for the tlsClientHeaders middleware.
+type TLSClientCertificateInfos struct {
 	NotAfter  bool
 	NotBefore bool
-	Subject   *domainNameOptions
-	Issuer    *domainNameOptions
+	Subject   *DistinguishedNameOptions
+	Issuer    *DistinguishedNameOptions
 	Sans      bool
 }
 
-type domainNameOptions struct {
+type DistinguishedNameOptions struct {
 	CommonName          bool
 	CountryName         bool
 	DomainComponent     bool
@@ -44,15 +44,15 @@ type domainNameOptions struct {
 // TLSClientHeaders is a middleware that helps setup a few tls infos features.
 type TLSClientHeaders struct {
 	PEM   bool                       // pass the sanitized pem to the backend in a specific header
-	Infos *tlsClientCertificateInfos // pass selected informations from the client certificate
+	Infos *TLSClientCertificateInfos // pass selected informations from the client certificate
 }
 
-func newDomainNameOptions(infos *types.TLSCLientCertificateDomainNameInfos) *domainNameOptions {
+func newDistinguishedNameOptions(infos *types.TLSCLientCertificateDistinguishedNameInfos) *DistinguishedNameOptions {
 	if infos == nil {
 		return nil
 	}
 
-	return &domainNameOptions{
+	return &DistinguishedNameOptions{
 		CommonName:          infos.CommonName,
 		CountryName:         infos.Country,
 		DomainComponent:     infos.DomainComponent,
@@ -63,17 +63,17 @@ func newDomainNameOptions(infos *types.TLSCLientCertificateDomainNameInfos) *dom
 	}
 }
 
-func newTLSClientInfos(infos *types.TLSClientCertificateInfos) *tlsClientCertificateInfos {
+func newTLSClientInfos(infos *types.TLSClientCertificateInfos) *TLSClientCertificateInfos {
 	if infos == nil {
 		return nil
 	}
 
-	return &tlsClientCertificateInfos{
+	return &TLSClientCertificateInfos{
 		NotBefore: infos.NotBefore,
 		NotAfter:  infos.NotAfter,
 		Sans:      infos.Sans,
-		Subject:   newDomainNameOptions(infos.Subject),
-		Issuer:    newDomainNameOptions(infos.Issuer),
+		Subject:   newDistinguishedNameOptions(infos.Subject),
+		Issuer:    newDistinguishedNameOptions(infos.Issuer),
 	}
 }
 
@@ -84,7 +84,7 @@ func NewTLSClientHeaders(frontend *types.Frontend) *TLSClientHeaders {
 	}
 
 	var addPEM bool
-	var infos *tlsClientCertificateInfos
+	var infos *TLSClientCertificateInfos
 
 	if frontend.PassTLSClientCert != nil {
 		conf := frontend.PassTLSClientCert
@@ -162,7 +162,7 @@ func getSANs(cert *x509.Certificate) []string {
 	return append(sans, uris...)
 }
 
-func (s *TLSClientHeaders) getDomainNameInfos(prefix string, options *domainNameOptions, cs *pkix.Name) string {
+func getDistinguishedNameInfos(prefix string, options *DistinguishedNameOptions, cs *pkix.Name) string {
 	var dn string
 
 	if options == nil {
@@ -220,7 +220,7 @@ func (s *TLSClientHeaders) getDomainNameInfos(prefix string, options *domainName
 }
 
 // getXForwardedTLSClientCertInfos Build a string with the wanted client certificates informations
-// like Subject="C=%s,ST=%s,L=%s,O=%s,CN=%s",NB=%d,NA=%d,SAN=%s;
+// like Subject="DC=%s,C=%s,ST=%s,L=%s,O=%s,CN=%s",NB=%d,NA=%d,SAN=%s;
 func (s *TLSClientHeaders) getXForwardedTLSClientCertInfos(certs []*x509.Certificate) string {
 	var headerValues []string
 
@@ -231,19 +231,16 @@ func (s *TLSClientHeaders) getXForwardedTLSClientCertInfos(certs []*x509.Certifi
 		var na string
 
 		if s.Infos != nil {
-			subject := s.getDomainNameInfos("Subject", s.Infos.Subject, &peerCert.Subject)
+			subject := getDistinguishedNameInfos("Subject", s.Infos.Subject, &peerCert.Subject)
 			if len(subject) > 0 {
 				values = append(values, subject)
 			}
 
-			issuer := s.getDomainNameInfos("Issuer", s.Infos.Issuer, &peerCert.Issuer)
+			issuer := getDistinguishedNameInfos("Issuer", s.Infos.Issuer, &peerCert.Issuer)
 			if len(issuer) > 0 {
 				values = append(values, issuer)
 			}
 		}
-		// TODO : remove
-		log.Printf("TEST JB - subject: %s", peerCert.Subject.String())
-		log.Printf("TEST JB - issuer: %s", peerCert.Issuer.String())
 
 		ci := s.Infos
 		if ci != nil {

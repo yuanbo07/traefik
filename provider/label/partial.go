@@ -78,13 +78,14 @@ func GetTLSClientCert(labels map[string]string) *types.TLSClientHeaders {
 		}
 
 		if HasPrefix(labels, TraefikFrontendPassTLSClientCertInfosSubject) {
-			subject := &types.TLSCLientCertificateSubjectInfos{
-				CommonName:   GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectCommonName, false),
-				Country:      GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectCountry, false),
-				Locality:     GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectLocality, false),
-				Organization: GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectOrganization, false),
-				Province:     GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectProvince, false),
-				SerialNumber: GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectSerialNumber, false),
+			subject := &types.TLSCLientCertificateDistinguishedNameInfos{
+				CommonName:      GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectCommonName, false),
+				Country:         GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectCountry, false),
+				DomainComponent: GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectDomainComponent, false),
+				Locality:        GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectLocality, false),
+				Organization:    GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectOrganization, false),
+				Province:        GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectProvince, false),
+				SerialNumber:    GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosSubjectSerialNumber, false),
 			}
 			infos.Subject = subject
 		}

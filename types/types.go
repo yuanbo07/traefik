@@ -629,44 +629,21 @@ type TLSClientHeaders struct {
 
 // TLSClientCertificateInfos holds the client TLS certificate infos configuration
 type TLSClientCertificateInfos struct {
-	NotAfter  bool                                 `description:"Add NotAfter info in header" json:"notAfter"`
-	NotBefore bool                                 `description:"Add NotBefore info in header" json:"notBefore"`
-	Subject   *TLSCLientCertificateDomainNameInfos `description:"Add Subject info in header" json:"subject,omitempty"`
-	Issuer    *TLSCLientCertificateDomainNameInfos `description:"Add Issuer info in header" json:"issuer,omitempty"`
-	Sans      bool                                 `description:"Add Sans info in header" json:"sans"`
+	NotAfter  bool                                        `description:"Add NotAfter info in header" json:"notAfter"`
+	NotBefore bool                                        `description:"Add NotBefore info in header" json:"notBefore"`
+	Subject   *TLSCLientCertificateDistinguishedNameInfos `description:"Add Subject info in header" json:"subject,omitempty"`
+	Issuer    *TLSCLientCertificateDistinguishedNameInfos `description:"Add Issuer info in header" json:"issuer,omitempty"`
+	Sans      bool                                        `description:"Add Sans info in header" json:"sans"`
 }
 
-// TLSCLientCertificateDomainNameInfos holds the client TLS certificate domain name infos configuration
-type TLSCLientCertificateDomainNameInfos struct {
+// TLSCLientCertificateDistinguishedNameInfos holds the client TLS certificate distinguished name infos configuration
+// cf https://tools.ietf.org/html/rfc3739
+type TLSCLientCertificateDistinguishedNameInfos struct {
 	CommonName      bool `description:"Add CommonName info in header" json:"commonName"`
 	Country         bool `description:"Add Country info in header" json:"country"`
 	DomainComponent bool `description:"Add Domain Component info in header" json:"domainComponent"`
 	Locality        bool `description:"Add Locality info in header" json:"locality"`
 	Organization    bool `description:"Add Organization info in header" json:"organization"`
 	Province        bool `description:"Add Province info in header" json:"province"`
-	SerialNumber    bool `description:"Add SerialNumber info in header" json:"serialNumber"`
-}
-
-// Deprecated
-type TLSCLientCertificateSubjectInfos struct {
-	CommonName      bool `description:"Add CommonName info in header" json:"commonName"`
-	Country         bool `description:"Add Country info in header" json:"country"`
-	DomainComponent bool `description:"Add Domain Component info in header" json:"domainComponent"`
-	Locality        bool `description:"Add Locality info in header" json:"locality"`
-	Organization    bool `description:"Add Organization info in header" json:"organization"`
-	Province        bool `description:"Add Province info in header" json:"province"`
-	SerialNumber    bool `description:"Add SerialNumber info in header" json:"serialNumber"`
-}
-
-// Deprecated
-// TLSClientCertificateIssuerInfos  holds the client TLS certificate issuer infos configuration
-// cf https://tools.ietf.org/html/rfc3739#section-3.1.1
-type TLSClientCertificateIssuerInfos struct {
-	CommonName      bool `description:"Add CommonName info in header" json:"commonName"`
-	Country         bool `description:"Add Country name info in header" json:"country"`
-	DomainComponent bool `description:"Add Domain Component info in header" json:"domainComponent"`
-	Locality        bool `description:"Add Locality info in header" json:"locality"`
-	Organization    bool `description:"Add Organization info in header" json:"organization"`
-	Province        bool `description:"Add StateOrProvince info in header" json:"province"`
 	SerialNumber    bool `description:"Add SerialNumber info in header" json:"serialNumber"`
 }

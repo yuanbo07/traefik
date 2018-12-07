@@ -865,7 +865,7 @@ func TestGetPassTLSClientCert(t *testing.T) {
 			},
 			expected: &types.TLSClientHeaders{
 				Infos: &types.TLSClientCertificateInfos{
-					Subject: &types.TLSCLientCertificateSubjectInfos{
+					Subject: &types.TLSCLientCertificateDistinguishedNameInfos{
 						CommonName: true,
 					},
 				},
@@ -878,7 +878,7 @@ func TestGetPassTLSClientCert(t *testing.T) {
 			},
 			expected: &types.TLSClientHeaders{
 				Infos: &types.TLSClientCertificateInfos{
-					Subject: &types.TLSCLientCertificateSubjectInfos{
+					Subject: &types.TLSCLientCertificateDistinguishedNameInfos{
 						Country: true,
 					},
 				},
@@ -891,7 +891,7 @@ func TestGetPassTLSClientCert(t *testing.T) {
 			},
 			expected: &types.TLSClientHeaders{
 				Infos: &types.TLSClientCertificateInfos{
-					Subject: &types.TLSCLientCertificateSubjectInfos{
+					Subject: &types.TLSCLientCertificateDistinguishedNameInfos{
 						Locality: true,
 					},
 				},
@@ -904,7 +904,7 @@ func TestGetPassTLSClientCert(t *testing.T) {
 			},
 			expected: &types.TLSClientHeaders{
 				Infos: &types.TLSClientCertificateInfos{
-					Subject: &types.TLSCLientCertificateSubjectInfos{
+					Subject: &types.TLSCLientCertificateDistinguishedNameInfos{
 						Organization: true,
 					},
 				},
@@ -917,7 +917,7 @@ func TestGetPassTLSClientCert(t *testing.T) {
 			},
 			expected: &types.TLSClientHeaders{
 				Infos: &types.TLSClientCertificateInfos{
-					Subject: &types.TLSCLientCertificateSubjectInfos{
+					Subject: &types.TLSCLientCertificateDistinguishedNameInfos{
 						Province: true,
 					},
 				},
@@ -930,7 +930,7 @@ func TestGetPassTLSClientCert(t *testing.T) {
 			},
 			expected: &types.TLSClientHeaders{
 				Infos: &types.TLSClientCertificateInfos{
-					Subject: &types.TLSCLientCertificateSubjectInfos{
+					Subject: &types.TLSCLientCertificateDistinguishedNameInfos{
 						SerialNumber: true,
 					},
 				},
@@ -956,7 +956,7 @@ func TestGetPassTLSClientCert(t *testing.T) {
 					Sans:      true,
 					NotBefore: true,
 					NotAfter:  true,
-					Subject: &types.TLSCLientCertificateSubjectInfos{
+					Subject: &types.TLSCLientCertificateDistinguishedNameInfos{
 						Province:     true,
 						Organization: true,
 						Locality:     true,
