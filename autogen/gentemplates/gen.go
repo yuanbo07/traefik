@@ -236,6 +236,7 @@ var _templatesConsul_catalogTmpl = []byte(`[backends]
           organization = {{ $subject.Organization }}
           commonName = {{ $subject.CommonName }}
           serialNumber = {{ $subject.SerialNumber }}
+          domainComponent = {{ $subject.DomainComponent }}
         {{end}}
       {{end}}
     {{end}}
@@ -1423,6 +1424,7 @@ var _templatesKubernetesTmpl = []byte(`[backends]
           organization = {{ $subject.Organization }}
           commonName = {{ $subject.CommonName }}
           serialNumber = {{ $subject.SerialNumber }}
+          domainComponent = {{ $subject.DomainComponent }}
         {{end}}
       {{end}}
     {{end}}
