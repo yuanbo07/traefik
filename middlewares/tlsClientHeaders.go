@@ -174,7 +174,6 @@ func getDistinguishedNameInfos(prefix string, options *DistinguishedNameOptions,
 	// Manage non standard attributes
 	for _, name := range cs.Names {
 		// Domain Component - RFC 2247
-		log.Printf("name: %#s", name)
 		if options.DomainComponent && attributeTypeNames[name.Type.String()] == "DC" {
 			content = append(content, fmt.Sprintf("DC=%s", name.Value))
 		}
