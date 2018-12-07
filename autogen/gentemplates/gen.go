@@ -722,6 +722,17 @@ var _templatesDockerTmpl = []byte(`{{$backendServers := .Servers}}
           serialNumber = {{ $subject.SerialNumber }}
           domainComponent = {{ $subject.DomainComponent }}
         {{end}}
+        {{ $issuer := $infos.Issuer }}
+        {{if $issuer }}
+        [frontends."frontend-{{ $frontendName }}".passTLSClientCert.infos.issuer]
+          country = {{ $issuer.Country }}
+          province = {{ $issuer.Province }}
+          locality = {{ $issuer.Locality }}
+          organization = {{ $issuer.Organization }}
+          commonName = {{ $issuer.CommonName }}
+          serialNumber = {{ $issuer.SerialNumber }}
+          domainComponent = {{ $issuer.DomainComponent }}
+        {{end}}
       {{end}}
     {{end}}
 
