@@ -47,23 +47,7 @@ type TLSClientHeaders struct {
 	Infos *tlsClientCertificateInfos // pass selected informations from the client certificate
 }
 
-func newTLSCLientCertificateIssuerInfos(infos *types.TLSClientCertificateIssuerInfos) *domainNameOptions {
-	if infos == nil {
-		return nil
-	}
-
-	return &domainNameOptions{
-		CommonName:          infos.CommonName,
-		CountryName:         infos.Country,
-		DomainComponent:     infos.DomainComponent,
-		LocalityName:        infos.Locality,
-		OrganizationName:    infos.Organization,
-		SerialNumber:        infos.SerialNumber,
-		StateOrProvinceName: infos.Province,
-	}
-}
-
-func newTLSCLientCertificateSubjectInfos(infos *types.TLSCLientCertificateSubjectInfos) *domainNameOptions {
+func newDomainNameOptions(infos *types.TLSCLientCertificateDomainNameInfos) *domainNameOptions {
 	if infos == nil {
 		return nil
 	}
@@ -88,8 +72,8 @@ func newTLSClientInfos(infos *types.TLSClientCertificateInfos) *tlsClientCertifi
 		NotBefore: infos.NotBefore,
 		NotAfter:  infos.NotAfter,
 		Sans:      infos.Sans,
-		Subject:   newTLSCLientCertificateSubjectInfos(infos.Subject),
-		Issuer:    newTLSCLientCertificateIssuerInfos(infos.Issuer),
+		Subject:   newDomainNameOptions(infos.Subject),
+		Issuer:    newDomainNameOptions(infos.Issuer),
 	}
 }
 
@@ -257,8 +241,10 @@ func (s *TLSClientHeaders) getXForwardedTLSClientCertInfos(certs []*x509.Certifi
 				values = append(values, issuer)
 			}
 		}
+		// TODO : remove
 		log.Printf("TEST JB - subject: %s", peerCert.Subject.String())
 		log.Printf("TEST JB - issuer: %s", peerCert.Issuer.String())
+
 		ci := s.Infos
 		if ci != nil {
 			if ci.NotBefore {
