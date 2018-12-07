@@ -89,6 +89,19 @@ func GetTLSClientCert(labels map[string]string) *types.TLSClientHeaders {
 			}
 			infos.Subject = subject
 		}
+
+		if HasPrefix(labels, TraefikFrontendPassTLSClientCertInfosIssuer) {
+			issuer := &types.TLSCLientCertificateDistinguishedNameInfos{
+				CommonName:      GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosIssuerCommonName, false),
+				Country:         GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosIssuerCountry, false),
+				DomainComponent: GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosIssuerDomainComponent, false),
+				Locality:        GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosIssuerLocality, false),
+				Organization:    GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosIssuerOrganization, false),
+				Province:        GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosIssuerProvince, false),
+				SerialNumber:    GetBoolValue(labels, TraefikFrontendPassTLSClientCertInfosIssuerSerialNumber, false),
+			}
+			infos.Issuer = issuer
+		}
 		tlsClientHeaders.Infos = infos
 	}
 	return tlsClientHeaders
