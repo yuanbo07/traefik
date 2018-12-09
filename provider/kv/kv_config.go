@@ -414,6 +414,20 @@ func (p *Provider) getTLSClientCert(rootPath string) *types.TLSClientHeaders {
 			}
 			infos.Subject = subject
 		}
+
+		if p.hasPrefix(rootPath, pathFrontendPassTLSClientCertInfosIssuer) {
+			issuer := &types.TLSCLientCertificateDistinguishedNameInfos{
+				CommonName:      p.getBool(false, rootPath, pathFrontendPassTLSClientCertInfosIssuerCommonName),
+				Country:         p.getBool(false, rootPath, pathFrontendPassTLSClientCertInfosIssuerCountry),
+				DomainComponent: p.getBool(false, rootPath, pathFrontendPassTLSClientCertInfosIssuerDomainComponent),
+				Locality:        p.getBool(false, rootPath, pathFrontendPassTLSClientCertInfosIssuerLocality),
+				Organization:    p.getBool(false, rootPath, pathFrontendPassTLSClientCertInfosIssuerOrganization),
+				Province:        p.getBool(false, rootPath, pathFrontendPassTLSClientCertInfosIssuerProvince),
+				SerialNumber:    p.getBool(false, rootPath, pathFrontendPassTLSClientCertInfosIssuerSerialNumber),
+			}
+			infos.Issuer = issuer
+		}
+
 		tlsClientHeaders.Infos = infos
 	}
 	return tlsClientHeaders
