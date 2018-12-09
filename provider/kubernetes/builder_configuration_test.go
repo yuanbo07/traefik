@@ -412,6 +412,15 @@ func passTLSClientCert() func(*types.Frontend) {
 					Province:        true,
 					SerialNumber:    true,
 				},
+				Issuer: &types.TLSCLientCertificateDistinguishedNameInfos{
+					CommonName:      true,
+					Country:         true,
+					DomainComponent: true,
+					Locality:        true,
+					Organization:    true,
+					Province:        true,
+					SerialNumber:    true,
+				},
 				Sans: true,
 			},
 		}

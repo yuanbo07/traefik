@@ -1460,6 +1460,17 @@ var _templatesKubernetesTmpl = []byte(`[backends]
           serialNumber = {{ $subject.SerialNumber }}
           domainComponent = {{ $subject.DomainComponent }}
         {{end}}
+        {{ $issuer := $infos.Subject }}
+        {{if $issuer }}
+        [frontends."{{ $frontendName }}".passTLSClientCert.infos.issuer]
+          country = {{ $issuer.Country }}
+          province = {{ $issuer.Province }}
+          locality = {{ $issuer.Locality }}
+          organization = {{ $issuer.Organization }}
+          commonName = {{ $issuer.CommonName }}
+          serialNumber = {{ $issuer.SerialNumber }}
+          domainComponent = {{ $issuer.DomainComponent }}
+        {{end}}
       {{end}}
     {{end}}
 
